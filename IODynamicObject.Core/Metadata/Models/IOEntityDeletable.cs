@@ -1,4 +1,4 @@
-﻿namespace IODynamicObject.Domain.Metadata.Models
+﻿namespace IODynamicObject.Core.Metadata.Models
 {
     public abstract class IOEntityDeletable : IOEntityTrackable
     {

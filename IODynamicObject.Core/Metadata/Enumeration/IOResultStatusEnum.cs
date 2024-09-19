@@ -1,4 +1,4 @@
-﻿namespace IODynamicObject.Domain.Metadata.Enumeration
+﻿namespace IODynamicObject.Core.Metadata.Enumeration
 {
     public enum IOResultStatusEnum
     {

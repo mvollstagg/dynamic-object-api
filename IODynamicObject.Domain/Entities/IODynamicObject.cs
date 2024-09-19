@@ -1,4 +1,4 @@
-﻿using IODynamicObject.Domain.Metadata.Models;
+﻿using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Domain.Entities
 {

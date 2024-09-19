@@ -1,7 +1,7 @@
-﻿using IODynamicObject.Domain.Metadata.Enumeration;
+﻿using IODynamicObject.Core.Metadata.Enumeration;
 using System.Collections.Generic;
 
-namespace IODynamicObject.Domain.Metadata.Models
+namespace IODynamicObject.Core.Metadata.Models
 {
     public class IOResult<T>
     {

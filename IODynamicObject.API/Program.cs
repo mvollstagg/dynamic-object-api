@@ -1,3 +1,4 @@
+using IODynamicObject.API.Middleware;
 using IODynamicObject.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,8 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+app.UseMiddleware<IOExceptionHandlingMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();

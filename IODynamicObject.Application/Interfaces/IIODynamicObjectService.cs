@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
-using IODynamicObject.Domain.Metadata.Models;
+using IODynamicObject.Core.Metadata.Models;
 using IODynamicObjectEntity = IODynamicObject.Domain.Entities.IODynamicObject;
 
 namespace IODynamicObject.Application.Interfaces.Services

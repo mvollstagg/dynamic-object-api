@@ -6,8 +6,8 @@ using IODynamicObject.Application.DTOs.Responses;
 using IODynamicObject.Application.Interfaces.Services;
 using IODynamicObject.Application.Validators;
 using IODynamicObject.Domain.Entities;
-using IODynamicObject.Domain.Metadata.Enumeration;
-using IODynamicObject.Domain.Metadata.Models;
+using IODynamicObject.Core.Metadata.Enumeration;
+using IODynamicObject.Core.Metadata.Models;
 using Microsoft.AspNetCore.Mvc;
 using IODynamicObjectEntity = IODynamicObject.Domain.Entities.IODynamicObject;
 

@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODynamicObject.Domain", "IODynamicObject.Domain\IODynamicObject.Domain.csproj", "{05A4F956-179F-4A7A-9BC3-B7FED8F6735F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IODynamicObject.Domain", "IODynamicObject.Domain\IODynamicObject.Domain.csproj", "{05A4F956-179F-4A7A-9BC3-B7FED8F6735F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODynamicObject.Application", "IODynamicObject.Application\IODynamicObject.Application.csproj", "{0B8DEAC5-A49C-4A48-9FDB-23EEE1BDA4C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IODynamicObject.Application", "IODynamicObject.Application\IODynamicObject.Application.csproj", "{0B8DEAC5-A49C-4A48-9FDB-23EEE1BDA4C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODynamicObject.Infrastructure", "IODynamicObject.Infrastructure\IODynamicObject.Infrastructure.csproj", "{198C3093-7F38-44E4-83FD-84C72B646663}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IODynamicObject.Infrastructure", "IODynamicObject.Infrastructure\IODynamicObject.Infrastructure.csproj", "{198C3093-7F38-44E4-83FD-84C72B646663}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODynamicObject.API", "IODynamicObject.API\IODynamicObject.API.csproj", "{16EE0DF1-57EA-4398-9AE0-032245099C00}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IODynamicObject.API", "IODynamicObject.API\IODynamicObject.API.csproj", "{16EE0DF1-57EA-4398-9AE0-032245099C00}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODynamicObject.Core", "IODynamicObject.Core\IODynamicObject.Core.csproj", "{6F758AB9-9436-43CB-9DD6-CE158723BD03}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{16EE0DF1-57EA-4398-9AE0-032245099C00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16EE0DF1-57EA-4398-9AE0-032245099C00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16EE0DF1-57EA-4398-9AE0-032245099C00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F758AB9-9436-43CB-9DD6-CE158723BD03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F758AB9-9436-43CB-9DD6-CE158723BD03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F758AB9-9436-43CB-9DD6-CE158723BD03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F758AB9-9436-43CB-9DD6-CE158723BD03}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

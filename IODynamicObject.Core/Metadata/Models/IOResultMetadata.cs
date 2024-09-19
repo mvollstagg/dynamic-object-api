@@ -1,7 +1,7 @@
-﻿using IODynamicObject.Domain.Metadata.Enumeration;
+﻿using IODynamicObject.Core.Metadata.Enumeration;
 using System.Collections.Generic;
 
-namespace IODynamicObject.Domain.Metadata.Models
+namespace IODynamicObject.Core.Metadata.Models
 {
     public class IOResultMetadata
     {
@@ -31,14 +31,29 @@ namespace IODynamicObject.Domain.Metadata.Models
 
         public void AddMessage(string key, string message)
         {
-            var kvp = Messages?.Find(kvp => kvp.Key == key);
-            if (kvp.HasValue)
+            if (Messages == null)
             {
-                kvp.Value.Value.Add(message);
+                Messages = new List<KeyValuePair<string, List<string>>>();
+            }
+
+            // Find the index of the KeyValuePair with the matching key
+            int index = Messages.FindIndex(kvp => kvp.Key == key);
+
+            if (index >= 0)
+            {
+                // Get the existing list of messages
+                var existingMessages = Messages[index].Value ?? new List<string>();
+
+                // Add the new message to the existing list
+                existingMessages.Add(message);
+
+                // Replace the KeyValuePair at the found index with the updated list
+                Messages[index] = new KeyValuePair<string, List<string>>(key, existingMessages);
             }
             else
             {
-                Messages?.Add(new KeyValuePair<string, List<string>>(key, new List<string> { message }));
+                // Key not found, add a new KeyValuePair to the list
+                Messages.Add(new KeyValuePair<string, List<string>>(key, new List<string> { message }));
             }
         }
     }
