@@ -1,5 +1,4 @@
-﻿using IODynamicObject.Core.Exceptions;
-using IODynamicObject.Core.Metadata.Enumeration;
+﻿using IODynamicObject.Core.Metadata.Enumeration;
 using IODynamicObject.Core.Metadata.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Net;

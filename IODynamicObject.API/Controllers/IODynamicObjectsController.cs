@@ -74,6 +74,34 @@ namespace IODynamicObject.API.Controllers
             return Ok(new IOResult<IODynamicObjectResponse>(result.Meta.Status, response));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetDynamicObjects(
+            [FromQuery] string objectType,
+            [FromQuery] Dictionary<string, string> filters,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "Id",
+            [FromQuery] string sortOrder = "asc")
+        {
+            var result = await _dynamicObjectService.GetByTypeAndFiltersAsync(objectType, filters, pageNumber, pageSize, sortBy, sortOrder);
+
+            if (result.Meta.Status == IOResultStatusEnum.Error)
+            {
+                return BadRequest(new IOResult<string>(result.Meta.Status, result.Meta.Messages));
+            }
+
+            var responses = result.Data.Select(obj => new IODynamicObjectResponse
+            {
+                Id = obj.Id,
+                ObjectType = obj.ObjectType,
+                Data = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.Data),
+                CreationDateUtc = obj.CreationDateUtc,
+                ModificationDateUtc = obj.ModificationDateUtc
+            }).ToList();
+
+            return Ok(new IOResult<List<IODynamicObjectResponse>>(result.Meta.Status, responses));
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateDynamicObject(long id, [FromBody] IODynamicObjectRequest request)
         {
