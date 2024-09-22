@@ -82,7 +82,7 @@ namespace IODynamicObject.API.Controllers
             // Create dynamic object entity
             var dynamicObject = new IODynamicObjectEntity
             {
-                ObjectType = request.Schema.ToString(),
+                SchemaType = request.Schema,
                 Data = jsonData,
                 CreationDateUtc = DateTime.UtcNow,
                 ModificationDateUtc = DateTime.UtcNow
@@ -100,17 +100,34 @@ namespace IODynamicObject.API.Controllers
 
         private async Task<IActionResult> HandleReadAsync(IODynamicObjectRequest request)
         {
-            switch (request.Schema)
+            dynamic filter = null;
+            if (request.Data != null)
             {
-                case SchemaTypeEnum.Customer:
-                    return await ReadObjectsAsync<Customer, CustomerFilterRule>(request);
-                case SchemaTypeEnum.Product:
-                    return await ReadObjectsAsync<Product, ProductFilter>(request);
-                case SchemaTypeEnum.Order:
-                    return await ReadObjectsAsync<Order, OrderFilter>(request);
-                default:
-                    return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Unsupported schema type."));
+                string jsonData = JsonConvert.SerializeObject(request.Data);
+                switch (request.Schema)
+                {
+                    case SchemaTypeEnum.Customer:
+                        filter = JsonConvert.DeserializeObject<CustomerFilter>(jsonData);
+                        break;
+                    case SchemaTypeEnum.Order:
+                        filter = JsonConvert.DeserializeObject<OrderFilter>(jsonData);
+                        break;
+                    case SchemaTypeEnum.Product:
+                        filter = JsonConvert.DeserializeObject<ProductFilter>(jsonData);
+                        break;
+                    default:
+                        return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Unsupported schema type."));
+                }
             }
+
+            var result = await _dynamicObjectService.GetByFiltersAsync(request.Schema, filter);
+
+            if (result.Meta.Status == IOResultStatusEnum.Error)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
         }
 
         private async Task<IActionResult> HandleUpdateAsync(IODynamicObjectRequest request)
@@ -142,7 +159,7 @@ namespace IODynamicObject.API.Controllers
             var dynamicObject = new IODynamicObjectEntity
             {
                 Id = ((IOEntityBase)dto).Id, // Assuming your DTOs inherit from IOEntityBase
-                ObjectType = request.Schema.ToString(),
+                SchemaType = request.Schema,
                 Data = jsonData,
                 ModificationDateUtc = DateTime.UtcNow
             };
@@ -210,42 +227,6 @@ namespace IODynamicObject.API.Controllers
                 errors.AddRange(results.Select(r => r.ErrorMessage));
             }
             return errors;
-        }
-
-        private async Task<IActionResult> ReadObjectsAsync<TEntity, TFilter>(IODynamicObjectRequest request, IIOFilterRule<TEntity, TFilter> filterRule = null) where TEntity : IOEntityBase where TFilter : class
-        {
-            var objectType = request.Schema.ToString();
-            var dynamicObjectsResult = await _dynamicObjectService.GetByTypeAsync(objectType);
-
-            if (dynamicObjectsResult.Meta.Status == IOResultStatusEnum.Error)
-            {
-                return BadRequest(dynamicObjectsResult);
-            }
-
-            // Deserialize Data fields into list of T
-            var dataList = dynamicObjectsResult.Data
-                .Select(o => JsonConvert.DeserializeObject<TEntity>(o.Data))
-                .AsQueryable();
-
-            // Apply custom filters
-            if (filterRule != null && request.Data != null)
-            {
-                var filters = request.Data as IDictionary<string, object>;
-                if (filters != null)
-                {
-                    dataList = filterRule.ApplyFilters(dataList, filters);
-                }
-            }
-
-            // Apply pagination and sorting
-            int pageNumber = request.PageNumber ?? 1;
-            int pageSize = request.PageSize ?? 10;
-            string sortBy = request.SortBy ?? "Id";
-            string sortOrder = request.SortOrder ?? "asc";
-
-            var filteredResult = IOResultFilter<TEntity>.Create(dataList, pageNumber, pageSize, sortBy, sortOrder);
-
-            return Ok(filteredResult);
         }
     }
 }

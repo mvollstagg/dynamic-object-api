@@ -1,40 +1,42 @@
 ﻿using IODynamicObject.Application.Filters;
-using IODynamicObject.Application.Types.Products;d
-using IODynamicObject.Core.Filtering;
+using IODynamicObject.Application.Types.Products;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class ProductFilterRule : IIOFilterRule<Product, ProductFilter>
+    public class ProductFilterRule : IIOFilterRule
     {
-        public IQueryable<Product> ApplyFilters(IQueryable<Product> source, ProductFilter filter)
+        public IQueryable<object> ApplyFilters(IQueryable<object> source, object filter)
         {
-            if (filter == null)
+            var productFilter = filter as ProductFilter;
+            if (productFilter == null)
             {
                 return source;
             }
 
-            if (filter.Id > 0)
+            var query = source.Cast<Product>().AsQueryable();
+
+            if (productFilter.Id > 0)
             {
-                source = source.Where(x => x.Id == filter.Id);
+                query = query.Where(p => p.Id == productFilter.Id);
             }
-            if (filter.Price > 0)
+            if (!string.IsNullOrEmpty(productFilter.Name))
             {
-                source = source.Where(x => x.Price == filter.Price);
+                query = query.Where(p => p.Name == productFilter.Name);
             }
-            if (!string.IsNullOrEmpty(filter.Name))
+            if (!string.IsNullOrEmpty(productFilter.Brand))
             {
-                source = source.Where(x => x.Name == filter.Name);
+                query = query.Where(p => p.Brand == productFilter.Brand);
             }
-            if (!string.IsNullOrEmpty(filter.Brand))
+            if (productFilter.Price > 0)
             {
-                source = source.Where(x => x.Brand == filter.Brand);
+                query = query.Where(p => p.Price == productFilter.Price);
             }
-            if (!string.IsNullOrEmpty(filter.Category))
+            if (!string.IsNullOrEmpty(productFilter.Category))
             {
-                source = source.Where(x => x.Category == filter.Category);
+                query = query.Where(p => p.Category == productFilter.Category);
             }
 
-            return source;
+            return query.Cast<object>();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using IODynamicObject.Application.Enumeration;
+using IODynamicObject.Core.Metadata.Enumeration;
 
 namespace IODynamicObject.Application.Types.IODynamicObjects
 {

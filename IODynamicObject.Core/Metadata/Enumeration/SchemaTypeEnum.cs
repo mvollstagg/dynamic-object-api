@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace IODynamicObject.Application.Enumeration
+namespace IODynamicObject.Core.Metadata.Enumeration
 {
     public enum SchemaTypeEnum : byte
     {

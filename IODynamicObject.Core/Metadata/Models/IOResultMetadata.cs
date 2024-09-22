@@ -5,6 +5,13 @@ namespace IODynamicObject.Core.Metadata.Models
 {
     public class IOResultMetadata
     {
+        public int? PageNumber { get; set; }
+        public int? PageSize { get; set; }
+        public string? SortBy { get; set; }
+        public string? SortOrder { get; set; }
+        public bool? HasNext { get; set; }
+        public bool? HasPrevious { get; set; }
+
         public IOResultStatusEnum Status { get; set; }
         public List<KeyValuePair<string, List<string>>>? Messages { get; set; }
 

@@ -1,4 +1,5 @@
-﻿using IODynamicObject.Core.Metadata.Models;
+﻿using IODynamicObject.Application.Types.Orders;
+using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Application.Types.Products
 {

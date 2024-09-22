@@ -18,7 +18,7 @@ namespace IODynamicObject.Infrastructure.Persistence
             modelBuilder.Entity<IODynamicObject.Domain.Entities.IODynamicObject>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.ObjectType).IsRequired();
+                entity.Property(e => e.SchemaType).IsRequired();
                 entity.Property(e => e.Data).IsRequired().HasColumnType("JSON");
                 entity.Property(e => e.Deleted).HasDefaultValue(false);
                 entity.Property(e => e.CreationDateUtc).HasColumnType("datetime").HasDefaultValueSql("CURRENT_TIMESTAMP");

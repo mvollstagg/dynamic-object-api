@@ -1,7 +1,7 @@
 ﻿namespace IODynamicObject.Application.Filters
 {
-    public interface IIOFilterRule<TEntity, TFilter>
+    public interface IIOFilterRule
     {
-        IQueryable<TEntity> ApplyFilters(IQueryable<TEntity> source, TFilter filters);
+        IQueryable<object> ApplyFilters(IQueryable<object> source, object filter);
     }
 }

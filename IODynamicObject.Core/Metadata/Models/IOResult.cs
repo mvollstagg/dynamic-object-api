@@ -1,5 +1,4 @@
 ﻿using IODynamicObject.Core.Metadata.Enumeration;
-using System.Collections.Generic;
 
 namespace IODynamicObject.Core.Metadata.Models
 {

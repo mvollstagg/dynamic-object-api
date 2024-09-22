@@ -12,6 +12,5 @@ namespace IODynamicObject.Application.Types.Orders
         public decimal TotalAmount { get; set; }
 
         public List<OrderItem> OrderItems { get; set; }
-        public OrderFilter? Filter { get; set; }
     }
 }

@@ -1,44 +1,46 @@
 ﻿using IODynamicObject.Application.Filters;
 using IODynamicObject.Application.Types.Customers;
-using IODynamicObject.Core.Filtering;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class CustomerFilterRule : IIOFilterRule<Customer, CustomerFilter>
+    public class CustomerFilterRule : IIOFilterRule
     {
-        public IQueryable<Customer> ApplyFilters(IQueryable<Customer> source, CustomerFilter filter)
+        public IQueryable<object> ApplyFilters(IQueryable<object> source, object filter)
         {
-            if (filter == null)
+            var customerFilter = filter as CustomerFilter;
+            if (customerFilter == null)
             {
                 return source;
             }
 
-            if (filter.Id > 0)
+            var query = source.Cast<Customer>().AsQueryable();
+
+            if (customerFilter.Id > 0)
             {
-                source = source.Where(x => x.Id == filter.Id);
+                query = query.Where(c => c.Id == customerFilter.Id);
             }
-            if (!string.IsNullOrEmpty(filter.FirstName))
+            if (!string.IsNullOrEmpty(customerFilter.FirstName))
             {
-                source = source.Where(x => x.FirstName == filter.FirstName);
+                query = query.Where(c => c.FirstName == customerFilter.FirstName);
             }
-            if (!string.IsNullOrEmpty(filter.LastName))
+            if (!string.IsNullOrEmpty(customerFilter.LastName))
             {
-                source = source.Where(x => x.LastName == filter.LastName);
+                query = query.Where(c => c.LastName == customerFilter.LastName);
             }
-            if (!string.IsNullOrEmpty(filter.Email))
+            if (!string.IsNullOrEmpty(customerFilter.Email))
             {
-                source = source.Where(x => x.Email == filter.Email);
+                query = query.Where(c => c.Email == customerFilter.Email);
             }
-            if (!string.IsNullOrEmpty(filter.Phone))
+            if (!string.IsNullOrEmpty(customerFilter.Phone))
             {
-                source = source.Where(x => x.Phone == filter.Phone);
+                query = query.Where(c => c.Phone == customerFilter.Phone);
             }
-            if (!string.IsNullOrEmpty(filter.Address))
+            if (!string.IsNullOrEmpty(customerFilter.Address))
             {
-                source = source.Where(x => x.Address == filter.Address);
+                query = query.Where(c => c.Address == customerFilter.Address);
             }
 
-            return source;
+            return query.Cast<object>();
         }
     }
 }
