@@ -1,4 +1,4 @@
-﻿namespace IODynamicObject.Application.DTOs.Responses
+﻿namespace IODynamicObject.Application.Types.IODynamicObjects
 {
     public class IODynamicObjectResponse
     {

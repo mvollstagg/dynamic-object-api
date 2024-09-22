@@ -1,223 +1,251 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
-using IODynamicObject.Application.DTOs.Requests;
-using IODynamicObject.Application.DTOs.Responses;
+using IODynamicObject.Application.Filters;
+using IODynamicObject.Application.Enumeration;
 using IODynamicObject.Application.Interfaces.Services;
+using IODynamicObject.Application.Types.Customers;
+using IODynamicObject.Application.Types.IODynamicObjects;
+using IODynamicObject.Application.Types.Orders;
+using IODynamicObject.Application.Types.Products;
 using IODynamicObject.Application.Validators;
-using IODynamicObject.Domain.Entities;
 using IODynamicObject.Core.Metadata.Enumeration;
 using IODynamicObject.Core.Metadata.Models;
+using IODynamicObject.Domain.Entities;
+using IODynamicObject.Infrastructure.Filters;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using IODynamicObjectEntity = IODynamicObject.Domain.Entities.IODynamicObject;
 
 namespace IODynamicObject.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class IODynamicObjectsController : ControllerBase
+    public class DynamicObjectController : ControllerBase
     {
         private readonly IIODynamicObjectService _dynamicObjectService;
         private readonly IIODynamicObjectValidator _validator;
 
-        public IODynamicObjectsController(IIODynamicObjectService dynamicObjectService, 
-                                            IIODynamicObjectValidator validator)
+        public DynamicObjectController(
+            IIODynamicObjectService dynamicObjectService,
+            IIODynamicObjectValidator validator)
         {
             _dynamicObjectService = dynamicObjectService;
             _validator = validator;
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateDynamicObject([FromBody] IODynamicObjectRequest request)
+        public async Task<IActionResult> HandleDynamicObject([FromBody] IODynamicObjectRequest request)
         {
-            var validationErrors = _validator.Validate(request);
-            if (validationErrors.Count > 0)
+            switch (request.Operation)
             {
-                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, validationErrors[0]));
+                case OperationTypeEnum.Create:
+                    return await HandleCreateAsync(request);
+                case OperationTypeEnum.Read:
+                    return await HandleReadAsync(request);
+                case OperationTypeEnum.Update:
+                    return await HandleUpdateAsync(request);
+                case OperationTypeEnum.Delete:
+                    return await HandleDeleteAsync(request);
+                default:
+                    return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Invalid operation specified."));
+            }
+        }
+
+        private async Task<IActionResult> HandleCreateAsync(IODynamicObjectRequest request)
+        {
+            if (request.Data == null)
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Data is required for create operation."));
             }
 
+            // Deserialize Data into the appropriate model based on Schema
+            object dto = DeserializeData(request.Schema, request.Data);
+
+            if (dto == null)
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Invalid data format."));
+            }
+
+            // Perform validation
+            var validationErrors = ValidateDto(dto);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new IOResult<List<string>>(IOResultStatusEnum.Error, validationErrors));
+            }
+
+            // Serialize DTO back to JSON string for storage
+            string jsonData = JsonConvert.SerializeObject(dto);
+
+            // Create dynamic object entity
             var dynamicObject = new IODynamicObjectEntity
             {
-                ObjectType = request.ObjectType,
-                Data = JsonSerializer.Serialize(request.Data)
+                ObjectType = request.Schema.ToString(),
+                Data = jsonData,
+                CreationDateUtc = DateTime.UtcNow,
+                ModificationDateUtc = DateTime.UtcNow
             };
 
             var result = await _dynamicObjectService.CreateAsync(dynamicObject);
 
             if (result.Meta.Status == IOResultStatusEnum.Error)
             {
-                return BadRequest(result.Meta.Messages);
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetDynamicObject(long id)
+        private async Task<IActionResult> HandleReadAsync(IODynamicObjectRequest request)
         {
-            var result = await _dynamicObjectService.GetByIdAsync(id);
-
-            if (result.Meta.Status == IOResultStatusEnum.Error)
+            switch (request.Schema)
             {
-                return NotFound(result.Meta.Messages);
+                case SchemaTypeEnum.Customer:
+                    return await ReadObjectsAsync<Customer, CustomerFilterRule>(request);
+                case SchemaTypeEnum.Product:
+                    return await ReadObjectsAsync<Product, ProductFilter>(request);
+                case SchemaTypeEnum.Order:
+                    return await ReadObjectsAsync<Order, OrderFilter>(request);
+                default:
+                    return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Unsupported schema type."));
             }
-
-            var response = new IODynamicObjectResponse
-            {
-                Id = result.Data.Id,
-                ObjectType = result.Data.ObjectType,
-                Data = JsonSerializer.Deserialize<Dictionary<string, object>>(result.Data.Data),
-                CreationDateUtc = result.Data.CreationDateUtc,
-                ModificationDateUtc = result.Data.ModificationDateUtc
-            };
-
-            return Ok(new IOResult<IODynamicObjectResponse>(result.Meta.Status, response));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetDynamicObjects(
-            [FromQuery] string objectType,
-            [FromQuery] Dictionary<string, string> filters,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string sortBy = "Id",
-            [FromQuery] string sortOrder = "asc")
+        private async Task<IActionResult> HandleUpdateAsync(IODynamicObjectRequest request)
         {
-            var result = await _dynamicObjectService.GetByTypeAndFiltersAsync(objectType, filters, pageNumber, pageSize, sortBy, sortOrder);
-
-            if (result.Meta.Status == IOResultStatusEnum.Error)
+            if (request.Data == null)
             {
-                return BadRequest(new IOResult<string>(result.Meta.Status, result.Meta.Messages));
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Data is required for update operation."));
             }
 
-            var responses = result.Data.Select(obj => new IODynamicObjectResponse
-            {
-                Id = obj.Id,
-                ObjectType = obj.ObjectType,
-                Data = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.Data),
-                CreationDateUtc = obj.CreationDateUtc,
-                ModificationDateUtc = obj.ModificationDateUtc
-            }).ToList();
+            // Deserialize Data into the appropriate model based on Schema
+            object dto = DeserializeData(request.Schema, request.Data);
 
-            return Ok(new IOResult<List<IODynamicObjectResponse>>(result.Meta.Status, responses));
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateDynamicObject(long id, [FromBody] IODynamicObjectRequest request)
-        {
-            var validationErrors = _validator.Validate(request);
-            if (validationErrors.Count > 0)
+            if (dto == null)
             {
-                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, validationErrors[0]));
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Invalid data format."));
             }
 
+            // Perform validation
+            var validationErrors = ValidateDto(dto);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new IOResult<List<string>>(IOResultStatusEnum.Error, validationErrors));
+            }
+
+            // Serialize DTO back to JSON string for storage
+            string jsonData = JsonConvert.SerializeObject(dto);
+
+            // Update dynamic object entity
             var dynamicObject = new IODynamicObjectEntity
             {
-                Id = id,
-                ObjectType = request.ObjectType,
-                Data = JsonSerializer.Serialize(request.Data)
+                Id = ((IOEntityBase)dto).Id, // Assuming your DTOs inherit from IOEntityBase
+                ObjectType = request.Schema.ToString(),
+                Data = jsonData,
+                ModificationDateUtc = DateTime.UtcNow
             };
 
             var result = await _dynamicObjectService.UpdateAsync(dynamicObject);
 
             if (result.Meta.Status == IOResultStatusEnum.Error)
             {
-                return BadRequest(result.Meta.Messages);
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDynamicObject(long id)
+        private async Task<IActionResult> HandleDeleteAsync(IODynamicObjectRequest request)
         {
+            if (request.Data == null || !((IDictionary<string, object>)request.Data).ContainsKey("Id"))
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Id is required for delete operation."));
+            }
+
+            long id = Convert.ToInt64(((IDictionary<string, object>)request.Data)["Id"]);
+
             var result = await _dynamicObjectService.DeleteAsync(id);
 
             if (result.Meta.Status == IOResultStatusEnum.Error)
             {
-                return NotFound(result.Meta.Messages);
+                return NotFound(result);
             }
 
             return Ok(result);
         }
 
-        [HttpPost("CreateOrder")]
-        public async Task<IActionResult> CreateOrder([FromBody] IOOrderRequest request)
+        private object DeserializeData(SchemaTypeEnum schema, dynamic data)
         {
-            using var transaction = await _dynamicObjectService.BeginTransactionAsync();
-
             try
             {
-                // Validate Order
-                var orderValidationErrors = new List<string>();
-                if (!request.OrderData.ContainsKey("CustomerId"))
+                string jsonData = JsonConvert.SerializeObject(data);
+                switch (schema)
                 {
-                    orderValidationErrors.Add("Field 'CustomerId' is required for Order.");
+                    case SchemaTypeEnum.Customer:
+                        return JsonConvert.DeserializeObject<Customer>(jsonData);
+                    case SchemaTypeEnum.Product:
+                        return JsonConvert.DeserializeObject<Product>(jsonData);
+                    case SchemaTypeEnum.Order:
+                        return JsonConvert.DeserializeObject<Order>(jsonData);
+                    default:
+                        return null;
                 }
-
-                if (request.OrderItems == null || request.OrderItems.Count == 0)
-                {
-                    orderValidationErrors.Add("At least one OrderItem is required.");
-                }
-
-                foreach (var item in request.OrderItems)
-                {
-                    if (!item.ContainsKey("ProductId") || !item.ContainsKey("Quantity"))
-                    {
-                        orderValidationErrors.Add("Each OrderItem must contain 'ProductId' and 'Quantity'.");
-                        break;
-                    }
-                }
-
-                if (orderValidationErrors.Count > 0)
-                {
-                    return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, orderValidationErrors[0]));
-                }
-
-                // Create Order
-                var order = new IODynamicObjectEntity
-                {
-                    ObjectType = "Order",
-                    Data = JsonSerializer.Serialize(request.OrderData)
-                };
-
-                var orderResult = await _dynamicObjectService.CreateAsync(order);
-
-                if (orderResult.Meta.Status == IOResultStatusEnum.Error)
-                {
-                    await transaction.RollbackAsync();
-                    return BadRequest(orderResult.Meta.Messages);
-                }
-
-                // Create Order Items
-                foreach (var itemData in request.OrderItems)
-                {
-                    itemData["OrderId"] = orderResult.Data.Id; // Link OrderItem to Order
-
-                    var orderItem = new IODynamicObjectEntity
-                    {
-                        ObjectType = "OrderItem",
-                        Data = JsonSerializer.Serialize(itemData)
-                    };
-
-                    var itemResult = await _dynamicObjectService.CreateAsync(orderItem);
-
-                    if (itemResult.Meta.Status == IOResultStatusEnum.Error)
-                    {
-                        await transaction.RollbackAsync();
-                        return BadRequest(itemResult.Meta.Messages);
-                    }
-                }
-
-                await transaction.CommitAsync();
-
-                return Ok(orderResult);
             }
-            catch (Exception ex)
+            catch
             {
-                await transaction.RollbackAsync();
-                return StatusCode(500, new IOResult<string>(IOResultStatusEnum.Error, ex.Message));
+                return null;
             }
+        }
+
+        private List<string> ValidateDto(object dto)
+        {
+            var errors = new List<string>();
+            var context = new ValidationContext(dto, null, null);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(dto, context, results, true);
+            if (!isValid)
+            {
+                errors.AddRange(results.Select(r => r.ErrorMessage));
+            }
+            return errors;
+        }
+
+        private async Task<IActionResult> ReadObjectsAsync<TEntity, TFilter>(IODynamicObjectRequest request, IIOFilterRule<TEntity, TFilter> filterRule = null) where TEntity : IOEntityBase where TFilter : class
+        {
+            var objectType = request.Schema.ToString();
+            var dynamicObjectsResult = await _dynamicObjectService.GetByTypeAsync(objectType);
+
+            if (dynamicObjectsResult.Meta.Status == IOResultStatusEnum.Error)
+            {
+                return BadRequest(dynamicObjectsResult);
+            }
+
+            // Deserialize Data fields into list of T
+            var dataList = dynamicObjectsResult.Data
+                .Select(o => JsonConvert.DeserializeObject<TEntity>(o.Data))
+                .AsQueryable();
+
+            // Apply custom filters
+            if (filterRule != null && request.Data != null)
+            {
+                var filters = request.Data as IDictionary<string, object>;
+                if (filters != null)
+                {
+                    dataList = filterRule.ApplyFilters(dataList, filters);
+                }
+            }
+
+            // Apply pagination and sorting
+            int pageNumber = request.PageNumber ?? 1;
+            int pageSize = request.PageSize ?? 10;
+            string sortBy = request.SortBy ?? "Id";
+            string sortOrder = request.SortOrder ?? "asc";
+
+            var filteredResult = IOResultFilter<TEntity>.Create(dataList, pageNumber, pageSize, sortBy, sortOrder);
+
+            return Ok(filteredResult);
         }
     }
 }

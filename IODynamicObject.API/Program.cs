@@ -1,5 +1,5 @@
 using IODynamicObject.API.Middleware;
-using IODynamicObject.Infrastructure.DependencyInjection;
+using IODynamicObject.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

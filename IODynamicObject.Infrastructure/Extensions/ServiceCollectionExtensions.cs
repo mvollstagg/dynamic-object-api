@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace IODynamicObject.Infrastructure.DependencyInjection
+namespace IODynamicObject.Infrastructure.Extensions
 {
     public static class ServiceCollectionExtensions
     {
