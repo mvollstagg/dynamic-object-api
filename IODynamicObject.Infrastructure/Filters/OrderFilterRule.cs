@@ -3,36 +3,40 @@ using IODynamicObject.Application.Types.Orders;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class OrderFilterRule : IIOFilterRule
+    public class OrderFilterRule : IIOFilterRule<Order, OrderFilter>
     {
-        public IQueryable<object> ApplyFilters(IQueryable<object> source, object filter)
+        public IQueryable<Order> ApplyFilters(IQueryable<object> source, object filter)
         {
             var orderFilter = filter as OrderFilter;
-            if (orderFilter == null)
-            {
-                return source;
-            }
-
             var query = source.Cast<Order>().AsQueryable();
 
-            if (orderFilter.Id > 0)
+            if (filter == null)
             {
-                query = query.Where(o => o.Id == orderFilter.Id);
+                return query;
             }
-            if (orderFilter.CustomerId > 0)
+
+            if (orderFilter.Guid != Guid.Empty)
+            {
+                query = query.Where(c => c.Guid == orderFilter.Guid);
+            }
+            if (orderFilter.CustomerId != Guid.Empty)
             {
                 query = query.Where(o => o.CustomerId == orderFilter.CustomerId);
             }
-            if (orderFilter.OrderStatus > 0)
+            if (orderFilter.OrderDateUtc.HasValue)
             {
-                query = query.Where(o => o.OrderStatus == orderFilter.OrderStatus);
+                query = query.Where(o => o.OrderDateUtc.Date == orderFilter.OrderDateUtc.Value.Date);
+            }
+            if (orderFilter.OrderStatus.HasValue)
+            {
+                query = query.Where(o => o.OrderStatus == orderFilter.OrderStatus.Value);
             }
             if (orderFilter.TotalAmount > 0)
             {
                 query = query.Where(o => o.TotalAmount == orderFilter.TotalAmount);
             }
 
-            return query.Cast<object>();
+            return query;
         }
     }
 }

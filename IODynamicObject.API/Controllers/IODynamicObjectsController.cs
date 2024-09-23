@@ -61,8 +61,8 @@ namespace IODynamicObject.API.Controllers
                 return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Data is required for create operation."));
             }
 
-            // Deserialize Data into the appropriate model based on Schema
-            object dto = DeserializeData(request.Schema, request.Data);
+            // Deserialize Data into the appropriate model based on Schema and assign GUID
+            object dto = DeserializeAndAssignGuid(request.Schema, request.Data);
 
             if (dto == null)
             {
@@ -88,6 +88,7 @@ namespace IODynamicObject.API.Controllers
                 ModificationDateUtc = DateTime.UtcNow
             };
 
+            // Save the dynamic object using the service
             var result = await _dynamicObjectService.CreateAsync(dynamicObject);
 
             if (result.Meta.Status == IOResultStatusEnum.Error)
@@ -96,6 +97,44 @@ namespace IODynamicObject.API.Controllers
             }
 
             return Ok(result);
+        }
+
+        private object DeserializeAndAssignGuid(SchemaTypeEnum schemaType, dynamic data)
+        {
+            try
+            {
+                string jsonData = JsonConvert.SerializeObject(data);
+
+                switch (schemaType)
+                {
+                    case SchemaTypeEnum.Customer:
+                        var customer = JsonConvert.DeserializeObject<Customer>(jsonData);
+                        customer.Guid = Guid.NewGuid();  // Assign new Guid
+                        return customer;
+
+                    case SchemaTypeEnum.Product:
+                        var product = JsonConvert.DeserializeObject<Product>(jsonData);
+                        product.Guid = Guid.NewGuid();  // Assign new Guid
+                        return product;
+
+                    case SchemaTypeEnum.Order:
+                        var order = JsonConvert.DeserializeObject<Order>(jsonData);
+                        order.Guid = Guid.NewGuid();  // Assign new Guid
+                                                      // Assign Guid for each OrderItem
+                        foreach (var item in order.OrderItems)
+                        {
+                            item.Guid = Guid.NewGuid();
+                        }
+                        return order;
+
+                    default:
+                        return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private async Task<IActionResult> HandleReadAsync(IODynamicObjectRequest request)
@@ -138,15 +177,32 @@ namespace IODynamicObject.API.Controllers
             }
 
             // Deserialize Data into the appropriate model based on Schema
-            object dto = DeserializeData(request.Schema, request.Data);
+            var dto = DeserializeData(request.Schema, request.Data);
 
             if (dto == null)
             {
                 return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Invalid data format."));
             }
 
-            // Perform validation
-            var validationErrors = ValidateDto(dto);
+            // Extract the Guid from the deserialized data
+            var guidProperty = dto.GetType().GetProperty("Guid");
+            if (guidProperty == null)
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Guid not found in the data."));
+            }
+            var guid = (Guid)guidProperty.GetValue(dto);
+
+            // Retrieve the object from the database using the Guid
+            var existingObjectResult = await _dynamicObjectService.GetByGuidAsync(request.Schema, guid);
+            if (existingObjectResult.Meta.Status == IOResultStatusEnum.Error)
+            {
+                return BadRequest(existingObjectResult);
+            }
+
+            var existingObject = existingObjectResult.Data;
+
+            // Perform validation on the new data
+            List<string> validationErrors = ValidateDto(dto);
             if (validationErrors.Any())
             {
                 return BadRequest(new IOResult<List<string>>(IOResultStatusEnum.Error, validationErrors));
@@ -158,7 +214,7 @@ namespace IODynamicObject.API.Controllers
             // Update dynamic object entity
             var dynamicObject = new IODynamicObjectEntity
             {
-                Id = ((IOEntityBase)dto).Id, // Assuming your DTOs inherit from IOEntityBase
+                Id = existingObject.Id, // Use the existing DB Id
                 SchemaType = request.Schema,
                 Data = jsonData,
                 ModificationDateUtc = DateTime.UtcNow
@@ -176,22 +232,47 @@ namespace IODynamicObject.API.Controllers
 
         private async Task<IActionResult> HandleDeleteAsync(IODynamicObjectRequest request)
         {
-            if (request.Data == null || !((IDictionary<string, object>)request.Data).ContainsKey("Id"))
+            if (request.Data == null)
             {
-                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Id is required for delete operation."));
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Data is required for update operation."));
             }
 
-            long id = Convert.ToInt64(((IDictionary<string, object>)request.Data)["Id"]);
+            // Deserialize Data into the appropriate model based on Schema
+            var dto = DeserializeData(request.Schema, request.Data);
 
-            var result = await _dynamicObjectService.DeleteAsync(id);
+            if (dto == null)
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Invalid data format."));
+            }
+
+            // Extract the Guid from the deserialized data
+            var guidProperty = dto.GetType().GetProperty("Guid");
+            if (guidProperty == null)
+            {
+                return BadRequest(new IOResult<string>(IOResultStatusEnum.Error, "Guid not found in the data."));
+            }
+            var guid = (Guid)guidProperty.GetValue(dto);
+
+            // Retrieve the object from the database using the Guid
+            var existingObjectResult = await _dynamicObjectService.GetByGuidAsync(request.Schema, guid);
+            if (existingObjectResult.Meta.Status == IOResultStatusEnum.Error)
+            {
+                return BadRequest(existingObjectResult);
+            }
+
+            var existingObject = existingObjectResult.Data;
+
+            // Delete the object using the Id retrieved from the existing object
+            var result = await _dynamicObjectService.DeleteAsync(existingObject.Id);
 
             if (result.Meta.Status == IOResultStatusEnum.Error)
             {
-                return NotFound(result);
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
+
 
         private object DeserializeData(SchemaTypeEnum schema, dynamic data)
         {

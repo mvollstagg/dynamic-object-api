@@ -3,7 +3,7 @@ using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Application.Types.Customers
 {
-    public class Customer : IOEntityBase
+    public class Customer : BaseType
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }

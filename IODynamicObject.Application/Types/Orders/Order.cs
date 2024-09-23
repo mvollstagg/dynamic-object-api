@@ -4,9 +4,9 @@ using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Application.Types.Orders
 {
-    public class Order : IOEntityBase
+    public class Order : BaseType
     {
-        public long CustomerId { get; set; }
+        public Guid CustomerId { get; set; }
         public DateTime OrderDateUtc { get; set; }
         public OrderStatusEnum OrderStatus { get; set; }
         public decimal TotalAmount { get; set; }

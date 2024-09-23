@@ -11,6 +11,10 @@ using IODynamicObject.Application.Types.Orders;
 using IODynamicObject.Application.Types.Products;
 using Newtonsoft.Json;
 using IODynamicObject.Application.Filters;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Generic;
+using System.Reflection;
+using IODynamicObject.Infrastructure.Filters;
 
 namespace IODynamicObject.Infrastructure.Services
 {
@@ -41,6 +45,53 @@ namespace IODynamicObject.Infrastructure.Services
             }
         }
 
+        public async Task<IOResult<IODynamicObjectEntity>> GetByGuidAsync(SchemaTypeEnum schemaType, Guid guid)
+        {
+            try
+            {
+                // Find all objects with the given schema type
+                var dynamicObjects = await _context.IODynamicObjects
+                    .Where(o => o.SchemaType == schemaType && !o.Deleted)
+                    .ToListAsync();
+
+                // Loop through each object, deserialize and check for matching Guid
+                foreach (var dynamicObject in dynamicObjects)
+                {
+                    switch (schemaType)
+                    {
+                        case SchemaTypeEnum.Customer:
+                            var customer = JsonConvert.DeserializeObject<Customer>(dynamicObject.Data);
+                            if (customer.Guid == guid)
+                            {
+                                return new IOResult<IODynamicObjectEntity>(IOResultStatusEnum.Success, dynamicObject);
+                            }
+                            break;
+                        case SchemaTypeEnum.Product:
+                            var product = JsonConvert.DeserializeObject<Product>(dynamicObject.Data);
+                            if (product.Guid == guid)
+                            {
+                                return new IOResult<IODynamicObjectEntity>(IOResultStatusEnum.Success, dynamicObject);
+                            }
+                            break;
+                        case SchemaTypeEnum.Order:
+                            var order = JsonConvert.DeserializeObject<Order>(dynamicObject.Data);
+                            if (order.Guid == guid)
+                            {
+                                return new IOResult<IODynamicObjectEntity>(IOResultStatusEnum.Success, dynamicObject);
+                            }
+                            break;
+                    }
+                }
+
+                return new IOResult<IODynamicObjectEntity>(IOResultStatusEnum.Error, "Object with the specified Guid not found.");
+            }
+            catch (Exception ex)
+            {
+                return new IOResult<IODynamicObjectEntity>(IOResultStatusEnum.Error, ex.Message);
+            }
+        }
+
+
         public async Task<IOResult<object>> GetByFiltersAsync(
             SchemaTypeEnum schemaType,
             object filter)
@@ -53,41 +104,49 @@ namespace IODynamicObject.Infrastructure.Services
                     .ToListAsync();
 
                 IEnumerable<dynamic> deserializedObjects;
-
+                var sortBy = (filter as BaseFilter).SortBy;
+                var sortOrder = (filter as BaseFilter).SortOrder;
+                var pageNumber = (filter as BaseFilter).PageNumber;
+                var pageSize = (filter as BaseFilter).PageSize;
                 // Deserialize Data field into the appropriate type
                 switch (schemaType)
                 {
                     case SchemaTypeEnum.Customer:
                         deserializedObjects = dynamicObjects
-                            .Select(o => JsonConvert.DeserializeObject<Customer>(o.Data))
-                            .AsQueryable();
-                        deserializedObjects = ApplyCustomerFilters(deserializedObjects, filter as CustomerFilter);
+                            .Select(o => JsonConvert.DeserializeObject<Customer>(o.Data));
+
+                        // Apply filters
+                        deserializedObjects = new CustomerFilterRule().ApplyFilters(deserializedObjects.AsQueryable(), filter as CustomerFilter);
+
+                        // Cast to concrete type before applying sorting
+                        deserializedObjects = ApplySorting((deserializedObjects as IEnumerable<Customer>).AsQueryable(), sortBy, sortOrder);
                         break;
 
                     case SchemaTypeEnum.Order:
                         deserializedObjects = dynamicObjects
-                            .Select(o => JsonConvert.DeserializeObject<Order>(o.Data))
-                            .AsQueryable();
-                        deserializedObjects = ApplyOrderFilters(deserializedObjects, filter as OrderFilter);
+                            .Select(o => JsonConvert.DeserializeObject<Order>(o.Data));
+
+                        // Apply filters
+                        deserializedObjects = new OrderFilterRule().ApplyFilters(deserializedObjects.AsQueryable(), filter as OrderFilter);
+
+                        // Cast to concrete type before applying sorting
+                        deserializedObjects = ApplySorting((deserializedObjects as IEnumerable<Order>).AsQueryable(), sortBy, sortOrder);
                         break;
 
                     case SchemaTypeEnum.Product:
                         deserializedObjects = dynamicObjects
-                            .Select(o => JsonConvert.DeserializeObject<Product>(o.Data))
-                            .AsQueryable();
-                        deserializedObjects = ApplyProductFilters(deserializedObjects, filter as ProductFilter);
+                            .Select(o => JsonConvert.DeserializeObject<Product>(o.Data));
+
+                        // Apply filters
+                        deserializedObjects = new ProductFilterRule().ApplyFilters(deserializedObjects.AsQueryable(), filter as ProductFilter);
+
+                        // Cast to concrete type before applying sorting
+                        deserializedObjects = ApplySorting((deserializedObjects as IEnumerable<Product>).AsQueryable(), sortBy, sortOrder);
                         break;
 
                     default:
                         throw new Exception("Unsupported schema type.");
                 }
-
-                var sortBy = (filter as BaseFilter).SortBy;
-                var sortOrder = (filter as BaseFilter).SortOrder;
-                var pageNumber = (filter as BaseFilter).PageNumber;
-                var pageSize = (filter as BaseFilter).PageSize;
-                // Apply sorting
-                deserializedObjects = ApplySorting(deserializedObjects.AsQueryable(), sortBy, sortOrder);
 
                 // Get total count
                 int totalCount = deserializedObjects.Count();
@@ -137,110 +196,6 @@ namespace IODynamicObject.Infrastructure.Services
             }
         }
 
-        // Helper methods for filtering
-        private IQueryable<Customer> ApplyCustomerFilters(IEnumerable<dynamic> source, CustomerFilter filter)
-        {
-            var query = source.Cast<Customer>().AsQueryable();
-
-            if (filter == null)
-            {
-                return query;
-            }
-
-            if (filter.Id > 0)
-            {
-                query = query.Where(c => c.Id == filter.Id);
-            }
-            if (!string.IsNullOrEmpty(filter.FirstName))
-            {
-                query = query.Where(c => c.FirstName.Contains(filter.FirstName));
-            }
-            if (!string.IsNullOrEmpty(filter.LastName))
-            {
-                query = query.Where(c => c.LastName.Contains(filter.LastName));
-            }
-            if (!string.IsNullOrEmpty(filter.Email))
-            {
-                query = query.Where(c => c.Email.Contains(filter.Email));
-            }
-            if (!string.IsNullOrEmpty(filter.Phone))
-            {
-                query = query.Where(c => c.Phone.Contains(filter.Phone));
-            }
-            if (!string.IsNullOrEmpty(filter.Address))
-            {
-                query = query.Where(c => c.Address.Contains(filter.Address));
-            }
-
-            return query;
-        }
-
-        private IQueryable<Order> ApplyOrderFilters(IEnumerable<dynamic> source, OrderFilter filter)
-        {
-            var query = source.Cast<Order>().AsQueryable();
-
-            if (filter == null)
-            {
-                return query;
-            }
-
-            if (filter.Id > 0)
-            {
-                query = query.Where(o => o.Id == filter.Id);
-            }
-            if (filter.CustomerId > 0)
-            {
-                query = query.Where(o => o.CustomerId == filter.CustomerId);
-            }
-            if (filter.OrderDateUtc.HasValue)
-            {
-                query = query.Where(o => o.OrderDateUtc.Date == filter.OrderDateUtc.Value.Date);
-            }
-            if (filter.OrderStatus.HasValue)
-            {
-                query = query.Where(o => o.OrderStatus == filter.OrderStatus.Value);
-            }
-            if (filter.TotalAmount > 0)
-            {
-                query = query.Where(o => o.TotalAmount == filter.TotalAmount);
-            }
-
-            return query;
-        }
-
-        private IQueryable<Product> ApplyProductFilters(IEnumerable<dynamic> source, ProductFilter filter)
-        {
-            var query = source.Cast<Product>().AsQueryable();
-
-            if (filter == null)
-            {
-                return query;
-            }
-
-            if (filter.Id > 0)
-            {
-                query = query.Where(p => p.Id == filter.Id);
-            }
-            if (!string.IsNullOrEmpty(filter.Name))
-            {
-                query = query.Where(p => p.Name.Contains(filter.Name));
-            }
-            if (!string.IsNullOrEmpty(filter.Brand))
-            {
-                query = query.Where(p => p.Brand.Contains(filter.Brand));
-            }
-            if (!string.IsNullOrEmpty(filter.Category))
-            {
-                query = query.Where(p => p.Category.Contains(filter.Category));
-            }
-            if (filter.Price > 0)
-            {
-                query = query.Where(p => p.Price == filter.Price);
-            }
-
-            return query;
-        }
-
         // Helper method for sorting
         private IQueryable<TEntity> ApplySorting<TEntity>(IQueryable<TEntity> query, string sortBy, string sortOrder) where TEntity : class
         {
@@ -249,23 +204,32 @@ namespace IODynamicObject.Infrastructure.Services
                 return query;
             }
 
+            // Ensure that we're working with the actual entity type, not dynamic
             var entityType = typeof(TEntity);
-            var propertyInfo = entityType.GetProperty(sortBy);
 
+            // Get the property to sort by
+            var propertyInfo = entityType.GetProperty(sortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+            // If property doesn't exist, throw an exception
             if (propertyInfo == null)
             {
                 throw new ArgumentException($"Property '{sortBy}' does not exist on type '{entityType.Name}'.", nameof(sortBy));
             }
 
+            // Create the lambda expression for sorting
             var parameter = Expression.Parameter(entityType, "x");
             var property = Expression.Property(parameter, propertyInfo);
             var lambda = Expression.Lambda(property, parameter);
 
-            var methodName = sortOrder.ToLower() == "desc" ? "OrderByDescending" : "OrderBy";
+            // Determine the sorting method (OrderBy or OrderByDescending)
+            string methodName = sortOrder.ToLower() == "desc" ? "OrderByDescending" : "OrderBy";
+
+            // Get the generic method for sorting
             var method = typeof(Queryable).GetMethods()
                 .First(m => m.Name == methodName && m.GetParameters().Length == 2)
-                .MakeGenericMethod(entityType, property.Type);
+                .MakeGenericMethod(entityType, propertyInfo.PropertyType);
 
+            // Invoke the sorting method
             return (IQueryable<TEntity>)method.Invoke(null, new object[] { query, lambda });
         }
 

@@ -3,7 +3,7 @@ using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Application.Types.Products
 {
-    public class Product : IOEntityBase
+    public class Product : BaseType
     {
         public string Name { get; set; }
         public string Brand { get; set; }
