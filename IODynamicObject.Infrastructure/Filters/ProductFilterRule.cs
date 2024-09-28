@@ -1,42 +1,40 @@
-﻿using IODynamicObject.Application.Filters;
-using IODynamicObject.Application.Types.Products;
+﻿using IODynamicObject.Application.Types.Products;
+using IODynamicObject.Core.Filtering;
+using IODynamicObject.Domain.Entities;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class ProductFilterRule : IIOFilterRule<Product, ProductFilter>
+    public class ProductFilterRule : IIOFilterRule<IOProduct, ProductFilter>
     {
-        public IQueryable<Product> ApplyFilters(IQueryable<object> source, object filter)
+        public IQueryable<IOProduct> ApplyFilters(IQueryable<IOProduct> source, ProductFilter filter)
         {
-            var productFilter = filter as ProductFilter;
-            var query = source.Cast<Product>().AsQueryable();
-
             if (filter == null)
             {
-                return query;
+                return source;
             }
 
-            if (productFilter.Guid != Guid.Empty)
+            if (filter.Id > 0)
             {
-                query = query.Where(c => c.Guid == productFilter.Guid);
+                source = source.Where(c => c.Id == filter.Id);
             }
-            if (!string.IsNullOrEmpty(productFilter.Name))
+            if (!string.IsNullOrEmpty(filter.Name))
             {
-                query = query.Where(p => p.Name.Contains(productFilter.Name));
+                source = source.Where(p => p.Name.Contains(filter.Name));
             }
-            if (!string.IsNullOrEmpty(productFilter.Brand))
+            if (!string.IsNullOrEmpty(filter.Brand))
             {
-                query = query.Where(p => p.Brand.Contains(productFilter.Brand));
+                source = source.Where(p => p.Brand.Contains(filter.Brand));
             }
-            if (!string.IsNullOrEmpty(productFilter.Category))
+            if (!string.IsNullOrEmpty(filter.Category))
             {
-                query = query.Where(p => p.Category.Contains(productFilter.Category));
+                source = source.Where(p => p.Category.Contains(filter.Category));
             }
-            if (productFilter.Price > 0)
+            if (filter.Price > 0)
             {
-                query = query.Where(p => p.Price == productFilter.Price);
+                source = source.Where(p => p.Price == filter.Price);
             }
 
-            return query;
+            return source;
         }
     }
 }

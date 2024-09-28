@@ -16,7 +16,7 @@ namespace IODynamicObject.Infrastructure.Extensions
             services.AddDbContext<IODataContext>(options =>
                 options.UseMySql(configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 28))));
 
-            services.AddScoped<IIODynamicObjectService, IODynamicObjectService>();
+            services.AddScoped<IOCustomerService>();
             services.AddScoped<IIODynamicObjectValidator, IODynamicObjectValidator>();
 
             return services;

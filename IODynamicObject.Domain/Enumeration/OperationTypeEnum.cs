@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace IODynamicObject.Application.Enumeration
+namespace IODynamicObject.Domain.Enumeration
 {
     public enum OperationTypeEnum : byte
     {

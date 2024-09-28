@@ -2,10 +2,10 @@
 
 namespace IODynamicObject.Application.Types.Orders
 {
-    public class OrderItem : BaseType
+    public class OrderItemModel : IOEntityBase
     {
-        public Guid OrderId { get; set; }
-        public Guid ProductId { get; set; }
+        public long OrderId { get; set; }
+        public long ProductId { get; set; }
         public int Quantity { get; set; }
     }
 }

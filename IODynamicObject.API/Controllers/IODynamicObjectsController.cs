@@ -1,11 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text.Json;
-using IODynamicObject.Application.Filters;
-using IODynamicObject.Application.Enumeration;
-using IODynamicObject.Application.Interfaces.Services;
 using IODynamicObject.Application.Types.Customers;
 using IODynamicObject.Application.Types.IODynamicObjects;
 using IODynamicObject.Application.Types.Orders;
@@ -14,10 +7,10 @@ using IODynamicObject.Application.Validators;
 using IODynamicObject.Core.Metadata.Enumeration;
 using IODynamicObject.Core.Metadata.Models;
 using IODynamicObject.Domain.Entities;
-using IODynamicObject.Infrastructure.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using IODynamicObjectEntity = IODynamicObject.Domain.Entities.IODynamicObject;
+using IODynamicObject.Domain.Enumeration;
+using IODynamicObject.Infrastructure.Services;
 
 namespace IODynamicObject.API.Controllers
 {
@@ -25,14 +18,14 @@ namespace IODynamicObject.API.Controllers
     [Route("api/[controller]")]
     public class DynamicObjectController : ControllerBase
     {
-        private readonly IIODynamicObjectService _dynamicObjectService;
+        private readonly IOCustomerService _customerService;
         private readonly IIODynamicObjectValidator _validator;
 
         public DynamicObjectController(
-            IIODynamicObjectService dynamicObjectService,
+            IOCustomerService customerService,
             IIODynamicObjectValidator validator)
         {
-            _dynamicObjectService = dynamicObjectService;
+            _customerService = customerService;
             _validator = validator;
         }
 
@@ -108,23 +101,15 @@ namespace IODynamicObject.API.Controllers
                 switch (schemaType)
                 {
                     case SchemaTypeEnum.Customer:
-                        var customer = JsonConvert.DeserializeObject<Customer>(jsonData);
-                        customer.Guid = Guid.NewGuid();  // Assign new Guid
+                        var customer = JsonConvert.DeserializeObject<IOCustomer>(jsonData);
                         return customer;
 
                     case SchemaTypeEnum.Product:
-                        var product = JsonConvert.DeserializeObject<Product>(jsonData);
-                        product.Guid = Guid.NewGuid();  // Assign new Guid
+                        var product = JsonConvert.DeserializeObject<IOProduct>(jsonData);
                         return product;
 
                     case SchemaTypeEnum.Order:
-                        var order = JsonConvert.DeserializeObject<Order>(jsonData);
-                        order.Guid = Guid.NewGuid();  // Assign new Guid
-                                                      // Assign Guid for each OrderItem
-                        foreach (var item in order.OrderItems)
-                        {
-                            item.Guid = Guid.NewGuid();
-                        }
+                        var order = JsonConvert.DeserializeObject<IOOrder>(jsonData);
                         return order;
 
                     default:
@@ -282,11 +267,11 @@ namespace IODynamicObject.API.Controllers
                 switch (schema)
                 {
                     case SchemaTypeEnum.Customer:
-                        return JsonConvert.DeserializeObject<Customer>(jsonData);
+                        return JsonConvert.DeserializeObject<IOCustomer>(jsonData);
                     case SchemaTypeEnum.Product:
-                        return JsonConvert.DeserializeObject<Product>(jsonData);
+                        return JsonConvert.DeserializeObject<IOProduct>(jsonData);
                     case SchemaTypeEnum.Order:
-                        return JsonConvert.DeserializeObject<Order>(jsonData);
+                        return JsonConvert.DeserializeObject<IOOrder>(jsonData);
                     default:
                         return null;
                 }

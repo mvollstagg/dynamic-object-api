@@ -1,4 +1,4 @@
-﻿using IODynamicObject.Application.Filters;
+﻿using IODynamicObject.Core.Filtering;
 using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Application.Types.Customers

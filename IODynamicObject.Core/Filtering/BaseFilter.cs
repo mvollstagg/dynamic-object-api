@@ -1,9 +1,8 @@
-﻿using IODynamicObject.Application.Types;
-using IODynamicObject.Core.Metadata.Models;
+﻿using IODynamicObject.Core.Metadata.Models;
 
-namespace IODynamicObject.Application.Filters
+namespace IODynamicObject.Core.Filtering
 {
-    public class BaseFilter : BaseType
+    public class BaseFilter : IOEntityBase
     {
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;

@@ -1,46 +1,44 @@
-﻿using IODynamicObject.Application.Filters;
-using IODynamicObject.Application.Types.Customers;
+﻿using IODynamicObject.Application.Types.Customers;
+using IODynamicObject.Core.Filtering;
+using IODynamicObject.Domain.Entities;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class CustomerFilterRule : IIOFilterRule<Customer, CustomerFilter>
+    public class CustomerFilterRule : IIOFilterRule<IOCustomer, CustomerFilter>
     {
-        public IQueryable<Customer> ApplyFilters(IQueryable<object> source, object filter)
+        public IQueryable<IOCustomer> ApplyFilters(IQueryable<IOCustomer> source, CustomerFilter filter)
         {
-            var customerFilter = filter as CustomerFilter;
-            var query = source.Cast<Customer>().AsQueryable();
-
             if (filter == null)
             {
-                return query;
+                return source;
             }
 
-            if (customerFilter.Guid != Guid.Empty)
+            if (filter.Id > 0)
             {
-                query = query.Where(c => c.Guid == customerFilter.Guid);
+                source = source.Where(c => c.Id == filter.Id);
             }
-            if (!string.IsNullOrEmpty(customerFilter.FirstName))
+            if (!string.IsNullOrEmpty(filter.FirstName))
             {
-                query = query.Where(c => c.FirstName.Contains(customerFilter.FirstName));
+                source = source.Where(c => c.FirstName.Contains(filter.FirstName));
             }
-            if (!string.IsNullOrEmpty(customerFilter.LastName))
+            if (!string.IsNullOrEmpty(filter.LastName))
             {
-                query = query.Where(c => c.LastName.Contains(customerFilter.LastName));
+                source = source.Where(c => c.LastName.Contains(filter.LastName));
             }
-            if (!string.IsNullOrEmpty(customerFilter.Email))
+            if (!string.IsNullOrEmpty(filter.Email))
             {
-                query = query.Where(c => c.Email.Contains(customerFilter.Email));
+                source = source.Where(c => c.Email.Contains(filter.Email));
             }
-            if (!string.IsNullOrEmpty(customerFilter.Phone))
+            if (!string.IsNullOrEmpty(filter.Phone))
             {
-                query = query.Where(c => c.Phone.Contains(customerFilter.Phone));
+                source = source.Where(c => c.Phone.Contains(filter.Phone));
             }
-            if (!string.IsNullOrEmpty(customerFilter.Address))
+            if (!string.IsNullOrEmpty(filter.Address))
             {
-                query = query.Where(c => c.Address.Contains(customerFilter.Address));
+                source = source.Where(c => c.Address.Contains(filter.Address));
             }
 
-            return query;
+            return source;
         }
     }
 }

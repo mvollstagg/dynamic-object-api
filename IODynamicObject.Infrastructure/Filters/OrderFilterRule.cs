@@ -1,42 +1,40 @@
-﻿using IODynamicObject.Application.Filters;
-using IODynamicObject.Application.Types.Orders;
+﻿using IODynamicObject.Application.Types.Orders;
+using IODynamicObject.Core.Filtering;
+using IODynamicObject.Domain.Entities;
 
 namespace IODynamicObject.Infrastructure.Filters
 {
-    public class OrderFilterRule : IIOFilterRule<Order, OrderFilter>
+    public class OrderFilterRule : IIOFilterRule<IOOrder, OrderFilter>
     {
-        public IQueryable<Order> ApplyFilters(IQueryable<object> source, object filter)
+        public IQueryable<IOOrder> ApplyFilters(IQueryable<IOOrder> source, OrderFilter filter)
         {
-            var orderFilter = filter as OrderFilter;
-            var query = source.Cast<Order>().AsQueryable();
-
             if (filter == null)
             {
-                return query;
+                return source;
             }
 
-            if (orderFilter.Guid != Guid.Empty)
+            if (filter.Id > 0)
             {
-                query = query.Where(c => c.Guid == orderFilter.Guid);
+                source = source.Where(c => c.Id == filter.Id);
             }
-            if (orderFilter.CustomerId != Guid.Empty)
+            if (filter.CustomerId > 0)
             {
-                query = query.Where(o => o.CustomerId == orderFilter.CustomerId);
+                source = source.Where(o => o.CustomerId == filter.CustomerId);
             }
-            if (orderFilter.OrderDateUtc.HasValue)
+            if (filter.OrderDateUtc.HasValue)
             {
-                query = query.Where(o => o.OrderDateUtc.Date == orderFilter.OrderDateUtc.Value.Date);
+                source = source.Where(o => o.OrderDateUtc.Date == filter.OrderDateUtc.Value.Date);
             }
-            if (orderFilter.OrderStatus.HasValue)
+            if (filter.OrderStatus.HasValue)
             {
-                query = query.Where(o => o.OrderStatus == orderFilter.OrderStatus.Value);
+                source = source.Where(o => o.OrderStatus == filter.OrderStatus.Value);
             }
-            if (orderFilter.TotalAmount > 0)
+            if (filter.TotalAmount > 0)
             {
-                query = query.Where(o => o.TotalAmount == orderFilter.TotalAmount);
+                source = source.Where(o => o.TotalAmount == filter.TotalAmount);
             }
 
-            return query;
+            return source;
         }
     }
 }

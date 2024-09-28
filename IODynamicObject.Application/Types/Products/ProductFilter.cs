@@ -1,5 +1,4 @@
-﻿using IODynamicObject.Application.Filters;
-using IODynamicObject.Core.Metadata.Models;
+﻿using IODynamicObject.Core.Filtering;
 
 namespace IODynamicObject.Application.Types.Products
 {
