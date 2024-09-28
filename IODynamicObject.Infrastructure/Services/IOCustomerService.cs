@@ -32,10 +32,31 @@ namespace IODynamicObject.Infrastructure.Services
                 customer.CreationDateUtc = DateTime.UtcNow;
                 customer.ModificationDateUtc = DateTime.UtcNow;
 
-                // Add customer to the context
-                await _context.Customers.AddAsync(customer);
+                // Process dynamic objects (e.g., addresses)
+                if (customer.DynamicObjects != null && customer.DynamicObjects.Any())
+                {
+                    foreach (var dynamicObject in customer.DynamicObjects)
+                    {
+                        // Set creation dates for dynamic objects and fields
+                        dynamicObject.CreationDateUtc = DateTime.UtcNow;
+                        dynamicObject.ModificationDateUtc = DateTime.UtcNow;
 
-                // Save changes to the database
+                        foreach (var field in dynamicObject.Fields)
+                        {
+                            field.CreationDateUtc = DateTime.UtcNow;
+                            field.ModificationDateUtc = DateTime.UtcNow;
+
+                            foreach (var value in field.Values)
+                            {
+                                value.CreationDateUtc = DateTime.UtcNow;
+                                value.ModificationDateUtc = DateTime.UtcNow;
+                            }
+                        }
+                    }
+                }
+
+                // Add customer with dynamic objects to the context
+                await _context.Customers.AddAsync(customer);
                 await _context.SaveChangesAsync();
 
                 return new IOResult<IOCustomer>(IOResultStatusEnum.Success, customer);
@@ -46,12 +67,17 @@ namespace IODynamicObject.Infrastructure.Services
             }
         }
 
+
         public async Task<IOResult<IOCustomer>> GetByIdAsync(long id)
         {
             try
             {
-                // Find customer by ID
-                var customer = await _context.Customers.FindAsync(id);
+                // Find customer by ID and include dynamic objects
+                var customer = await _context.Customers
+                    .Include(c => c.DynamicObjects)
+                    .ThenInclude(o => o.Fields)
+                    .ThenInclude(f => f.Values)
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (customer == null || customer.Deleted)
                 {
@@ -65,6 +91,9 @@ namespace IODynamicObject.Infrastructure.Services
                 return new IOResult<IOCustomer>(IOResultStatusEnum.Error, ex.Message);
             }
         }
+
+        
+
 
         public async Task<IOResult<List<IOCustomer>>> GetByFiltersAsync(CustomerFilter filter)
         {

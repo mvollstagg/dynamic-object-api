@@ -10,6 +10,6 @@ namespace IODynamicObject.Domain.Entities
         public string Category { get; set; }
 
         // Navigation property for dynamic objects (custom fields for a product)
-        public ICollection<IOObject> DynamicObjects { get; set; }
+        public virtual List<IOObject> DynamicObjects { get; set; }
     }
 }

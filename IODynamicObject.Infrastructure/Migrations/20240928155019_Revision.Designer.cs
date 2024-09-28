@@ -4,6 +4,7 @@ using IODynamicObject.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IODynamicObject.Infrastructure.Migrations
 {
     [DbContext(typeof(IODataContext))]
-    partial class IODataContextModelSnapshot : ModelSnapshot
+    [Migration("20240928155019_Revision")]
+    partial class Revision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -78,21 +81,6 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long>("CreatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreationDateUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<long?>("IOObjectId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("ModificatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("ModificationDateUtc")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -102,7 +90,7 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IOObjectId");
+                    b.HasIndex("ObjectId");
 
                     b.ToTable("Fields");
                 });
@@ -115,33 +103,12 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long>("CreatedById")
+                    b.Property<long>("EntityId")
                         .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreationDateUtc")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("EntityType")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<long?>("IOCustomerId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("IOOrderId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("IOOrderItemId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("IOProductId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("ModificatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("ModificationDateUtc")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -149,13 +116,7 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IOCustomerId");
-
-                    b.HasIndex("IOOrderId");
-
-                    b.HasIndex("IOOrderItemId");
-
-                    b.HasIndex("IOProductId");
+                    b.HasIndex("EntityId");
 
                     b.ToTable("Objects");
                 });
@@ -285,23 +246,8 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long>("CreatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreationDateUtc")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<long>("FieldId")
                         .HasColumnType("bigint");
-
-                    b.Property<long?>("IOFieldId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("ModificatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("ModificationDateUtc")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Value")
                         .IsRequired()
@@ -309,35 +255,41 @@ namespace IODynamicObject.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IOFieldId");
+                    b.HasIndex("FieldId");
 
                     b.ToTable("Values");
                 });
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOField", b =>
                 {
-                    b.HasOne("IODynamicObject.Domain.Entities.IOObject", null)
+                    b.HasOne("IODynamicObject.Domain.Entities.IOObject", "Object")
                         .WithMany("Fields")
-                        .HasForeignKey("IOObjectId");
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Object");
                 });
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOObject", b =>
                 {
                     b.HasOne("IODynamicObject.Domain.Entities.IOCustomer", null)
                         .WithMany("DynamicObjects")
-                        .HasForeignKey("IOCustomerId");
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("IODynamicObject.Domain.Entities.IOOrder", null)
                         .WithMany("DynamicObjects")
-                        .HasForeignKey("IOOrderId");
-
-                    b.HasOne("IODynamicObject.Domain.Entities.IOOrderItem", null)
-                        .WithMany("DynamicObjects")
-                        .HasForeignKey("IOOrderItemId");
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("IODynamicObject.Domain.Entities.IOProduct", null)
                         .WithMany("DynamicObjects")
-                        .HasForeignKey("IOProductId");
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOOrder", b =>
@@ -372,9 +324,13 @@ namespace IODynamicObject.Infrastructure.Migrations
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOValue", b =>
                 {
-                    b.HasOne("IODynamicObject.Domain.Entities.IOField", null)
+                    b.HasOne("IODynamicObject.Domain.Entities.IOField", "Field")
                         .WithMany("Values")
-                        .HasForeignKey("IOFieldId");
+                        .HasForeignKey("FieldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Field");
                 });
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOCustomer", b =>
@@ -399,11 +355,6 @@ namespace IODynamicObject.Infrastructure.Migrations
                     b.Navigation("DynamicObjects");
 
                     b.Navigation("OrderItems");
-                });
-
-            modelBuilder.Entity("IODynamicObject.Domain.Entities.IOOrderItem", b =>
-                {
-                    b.Navigation("DynamicObjects");
                 });
 
             modelBuilder.Entity("IODynamicObject.Domain.Entities.IOProduct", b =>

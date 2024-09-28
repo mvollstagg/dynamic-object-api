@@ -5,15 +5,13 @@ namespace IODynamicObject.Domain.Entities
 {
     public class IOOrderItem : IOEntityBase
     {
-        public long OrderId { get; set; } // Foreign Key to Order
-        public long ProductId { get; set; } // Foreign Key to Product
+        public long OrderId { get; set; }
+        public long ProductId { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
 
-        // Navigation property for the order
         public IOOrder Order { get; set; }
-
-        // Navigation property for the product
         public IOProduct Product { get; set; }
+        public virtual List<IOObject> DynamicObjects { get; set; }
     }
 }

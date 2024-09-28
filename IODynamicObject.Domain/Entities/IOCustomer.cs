@@ -12,9 +12,9 @@ namespace IODynamicObject.Domain.Entities
         public string Address { get; set; }
 
         // Navigation property for Orders
-        public ICollection<IOOrder> Orders { get; set; }
+        public virtual List<IOOrder> Orders { get; set; }
 
         // Navigation property for dynamic objects (custom fields for a customer)
-        public ICollection<IOObject> DynamicObjects { get; set; }
+        public virtual List<IOObject> DynamicObjects { get; set; }
     }
 }

@@ -3,11 +3,10 @@ using IODynamicObject.Core.Metadata.Models;
 
 namespace IODynamicObject.Domain.Entities
 {
-    public class IOObject : IOEntityBase
+    public class IOObject : IOEntityTrackable
     {
-        public string Name { get; set; } // E.g., Product, Customer, Order
+        public string Name { get; set; }
 
-        // Navigation property for related fields and values
-        public ICollection<IOField> Fields { get; set; }
+        public virtual List<IOField> Fields { get; set; }
     }
 }
