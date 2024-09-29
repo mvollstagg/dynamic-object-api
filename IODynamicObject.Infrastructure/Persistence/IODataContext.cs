@@ -11,7 +11,7 @@ namespace IODynamicObject.Infrastructure.Persistence
 
         public DbSet<IOCustomer> Customers { get; set; }
         public DbSet<IOProduct> Products { get; set; }
-        public DbSet<IOOrder> Order { get; set; }
+        public DbSet<IOOrder> Orders { get; set; }
         public DbSet<IOOrderItem> OrderItems { get; set; }
 
         #region Dynamic Object Tables

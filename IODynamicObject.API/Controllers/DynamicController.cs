@@ -18,12 +18,15 @@ namespace IODynamicObject.API.Controllers
     {
         private readonly IOCustomerService _customerService;
         private readonly IOProductService _productService;
+        private readonly IOOrderService _orderService;
 
-        public DynamicController(IOCustomerService customerService, 
-                                IOProductService productService)
+        public DynamicController(IOCustomerService customerService,
+                                IOProductService productService,
+                                IOOrderService orderService)
         {
             _customerService = customerService;
             _productService = productService;
+            _orderService = orderService;
         }
 
         [HttpPost]
@@ -74,10 +77,11 @@ namespace IODynamicObject.API.Controllers
                     var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
                     return Ok(customerDto);
 
-                //case "order":
-                //    var order = data.ToObject<IOOrder>();
-                //    var orderResult = await _orderService.CreateAsync(order);
-                //    return Ok(orderResult);
+                case "order":
+                    var order = data.ToObject<IOOrder>();
+                    var orderResult = await _orderService.CreateAsync(order);
+                    var orderDto = IOMappingHelper.ApplyMapping<IOOrder, OrderModel>(orderResult.Data);
+                    return Ok(orderDto);
 
                 case "product":
                     var product = data.ToObject<IOProduct>();
@@ -99,9 +103,10 @@ namespace IODynamicObject.API.Controllers
                     var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
                     return Ok(customerDto);
 
-                //case "order":
-                //    var orderResult = await _orderService.GetByIdAsync(id);
-                //    return Ok(orderResult);
+                case "order":
+                    var orderResult = await _orderService.GetByIdAsync(id);
+                    var orderDto = IOMappingHelper.ApplyMapping<IOOrder, OrderModel>(orderResult.Data);
+                    return Ok(orderDto);
 
                 case "product":
                     var productResult = await _productService.GetByIdAsync(id);

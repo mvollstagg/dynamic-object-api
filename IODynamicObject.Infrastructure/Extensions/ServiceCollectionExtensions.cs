@@ -18,6 +18,7 @@ namespace IODynamicObject.Infrastructure.Extensions
 
             services.AddScoped<IOCustomerService>();
             services.AddScoped<IOProductService>();
+            services.AddScoped<IOOrderService>();
             services.AddScoped<IIODynamicObjectValidator, IODynamicObjectValidator>();
 
             return services;

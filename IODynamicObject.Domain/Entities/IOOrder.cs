@@ -5,7 +5,6 @@ namespace IODynamicObject.Domain.Entities
 {
     public class IOOrder : IOEntityDeletable
     {
-        public DateTime OrderDate { get; set; }
         public long CustomerId { get; set; }
         public DateTime OrderDateUtc { get; set; }
         public OrderStatusEnum OrderStatus { get; set; }

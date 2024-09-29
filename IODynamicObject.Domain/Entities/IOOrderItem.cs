@@ -12,6 +12,5 @@ namespace IODynamicObject.Domain.Entities
 
         public IOOrder Order { get; set; }
         public IOProduct Product { get; set; }
-        public virtual List<IOObject> DynamicObjects { get; set; }
     }
 }
