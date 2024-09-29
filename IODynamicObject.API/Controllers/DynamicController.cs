@@ -74,19 +74,19 @@ namespace IODynamicObject.API.Controllers
                 case "customer":
                     var customer = data.ToObject<IOCustomer>();
                     var customerResult = await _customerService.CreateAsync(customer);
-                    var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
+                    var customerDto = await HandleRead("customer", customerResult.Data.Id);
                     return Ok(customerDto);
 
                 case "order":
                     var order = data.ToObject<IOOrder>();
                     var orderResult = await _orderService.CreateAsync(order);
-                    var orderDto = IOMappingHelper.ApplyMapping<IOOrder, OrderModel>(orderResult.Data);
+                    var orderDto = await HandleRead("order", orderResult.Data.Id);
                     return Ok(orderDto);
 
                 case "product":
                     var product = data.ToObject<IOProduct>();
                     var productResult = await _productService.CreateAsync(product);
-                    var productDto = IOMappingHelper.ApplyMapping<IOProduct, ProductModel>(productResult.Data);
+                    var productDto = await HandleRead("product", productResult.Data.Id);
                     return Ok(productDto);
 
                 default:
