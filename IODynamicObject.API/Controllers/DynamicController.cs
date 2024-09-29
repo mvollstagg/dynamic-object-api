@@ -8,6 +8,7 @@ using IODynamicObject.Application.Types.Customers;
 using IODynamicObject.Application.Types.Orders;
 using IODynamicObject.Application.Types.Products;
 using IODynamicObject.Infrastructure.Services;
+using IODynamicObject.Application.Mappers;
 
 namespace IODynamicObject.API.Controllers
 {
@@ -16,10 +17,13 @@ namespace IODynamicObject.API.Controllers
     public class DynamicController : ControllerBase
     {
         private readonly IOCustomerService _customerService;
+        private readonly IOProductService _productService;
 
-        public DynamicController(IOCustomerService customerService)
+        public DynamicController(IOCustomerService customerService, 
+                                IOProductService productService)
         {
             _customerService = customerService;
+            _productService = productService;
         }
 
         [HttpPost]
@@ -66,26 +70,20 @@ namespace IODynamicObject.API.Controllers
             {
                 case "customer":
                     var customer = data.ToObject<IOCustomer>();
-
-                    // Process dynamic objects such as addresses
-                    var dynamicObjects = data["dynamicObjects"]?.ToObject<List<IOObject>>();
-                    if (dynamicObjects != null)
-                    {
-                        customer.DynamicObjects = dynamicObjects;
-                    }
-
                     var customerResult = await _customerService.CreateAsync(customer);
-                    return Ok(customerResult);
+                    var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
+                    return Ok(customerDto);
 
                 //case "order":
                 //    var order = data.ToObject<IOOrder>();
                 //    var orderResult = await _orderService.CreateAsync(order);
                 //    return Ok(orderResult);
 
-                //case "product":
-                //    var product = data.ToObject<IOProduct>();
-                //    var productResult = await _productService.CreateAsync(product);
-                //    return Ok(productResult);
+                case "product":
+                    var product = data.ToObject<IOProduct>();
+                    var productResult = await _productService.CreateAsync(product);
+                    var productDto = IOMappingHelper.ApplyMapping<IOProduct, ProductModel>(productResult.Data);
+                    return Ok(productDto);
 
                 default:
                     return BadRequest("Invalid object type.");
@@ -98,75 +96,21 @@ namespace IODynamicObject.API.Controllers
             {
                 case "customer":
                     var customerResult = await _customerService.GetByIdAsync(id);
-                    var customerDto = MapCustomerToDto(customerResult.Data);
+                    var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
                     return Ok(customerDto);
 
                 //case "order":
                 //    var orderResult = await _orderService.GetByIdAsync(id);
                 //    return Ok(orderResult);
 
-                //case "product":
-                //    var productResult = await _productService.GetByIdAsync(id);
-                //    return Ok(productResult);
+                case "product":
+                    var productResult = await _productService.GetByIdAsync(id);
+                    var productDto = IOMappingHelper.ApplyMapping<IOProduct, ProductModel>(productResult.Data);
+                    return Ok(productDto);
 
                 default:
                     return BadRequest("Invalid object type.");
             }
-        }
-
-        private CustomerModel MapCustomerToDto(IOCustomer customer)
-        {
-            var customerDto = new CustomerModel
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                Email = customer.Email,
-                Phone = customer.Phone,
-                Address = customer.Address,
-                CreationDateUtc = customer.CreationDateUtc,
-                ModificationDateUtc = customer.ModificationDateUtc,
-                Id = customer.Id,
-                DynamicObjects = new List<Dictionary<string, List<Dictionary<string, string>>>>()
-            };
-
-            foreach (var dynamicObject in customer.DynamicObjects)
-            {
-                var dynamicObjectEntry = new Dictionary<string, List<Dictionary<string, string>>>();
-
-                if (dynamicObject.Name == "Address")
-                {
-                    var addressList = new List<Dictionary<string, string>>();
-
-                    for (int i = 0; i < dynamicObject.Fields.First().Values.Count; i++)
-                    {
-                        var addressEntry = new Dictionary<string, string>();
-
-                        foreach (var field in dynamicObject.Fields)
-                        {
-                            addressEntry[field.Name] = field.Values[i].Value;
-                        }
-
-                        addressList.Add(addressEntry);
-                    }
-
-                    dynamicObjectEntry[dynamicObject.Name] = addressList;
-                }
-                else if (dynamicObject.Name == "PhoneNumbers")
-                {
-                    var phoneNumbers = new Dictionary<string, string>();
-
-                    foreach (var field in dynamicObject.Fields)
-                    {
-                        phoneNumbers[field.Name] = field.Values.First().Value; // Since phone numbers are single values
-                    }
-
-                    dynamicObjectEntry[dynamicObject.Name] = new List<Dictionary<string, string>> { phoneNumbers };
-                }
-
-                customerDto.DynamicObjects.Add(dynamicObjectEntry);
-            }
-
-            return customerDto;
         }
 
         private async Task<IActionResult> HandleUpdate(string objectType, JToken data, long id)
@@ -185,11 +129,11 @@ namespace IODynamicObject.API.Controllers
                 //    var orderResult = await _orderService.UpdateAsync(order);
                 //    return Ok(orderResult);
 
-                //case "product":
-                //    var product = data.ToObject<IOProduct>();
-                //    product.Id = id;
-                //    var productResult = await _productService.UpdateAsync(product);
-                //    return Ok(productResult);
+                case "product":
+                    var product = data.ToObject<IOProduct>();
+                    product.Id = id;
+                    var productResult = await _productService.UpdateAsync(product);
+                    return Ok(productResult);
 
                 default:
                     return BadRequest("Invalid object type.");
@@ -208,9 +152,9 @@ namespace IODynamicObject.API.Controllers
                 //    var orderResult = await _orderService.DeleteAsync(id);
                 //    return Ok(orderResult);
 
-                //case "product":
-                //    var productResult = await _productService.DeleteAsync(id);
-                //    return Ok(productResult);
+                case "product":
+                    var productResult = await _productService.DeleteAsync(id);
+                    return Ok(productResult);
 
                 default:
                     return BadRequest("Invalid object type.");
