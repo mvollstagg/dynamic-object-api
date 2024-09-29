@@ -21,12 +21,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/api/dynamic",
+					"raw": "http://dynamic-api.runasp.net/api/dynamic",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"dynamic-api",
+						"runasp",
+						"net"
 					],
-					"port": "5000",
 					"path": [
 						"api",
 						"dynamic"
@@ -50,12 +51,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/api/dynamic",
+					"raw": "http://dynamic-api.runasp.net/api/dynamic",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"dynamic-api",
+						"runasp",
+						"net"
 					],
-					"port": "5000",
 					"path": [
 						"api",
 						"dynamic"
@@ -79,12 +81,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/api/DynamicObject",
+					"raw": "http://dynamic-api.runasp.net/api/DynamicObject",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"dynamic-api",
+						"runasp",
+						"net"
 					],
-					"port": "5000",
 					"path": [
 						"api",
 						"DynamicObject"
@@ -108,12 +111,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/api/DynamicObject",
+					"raw": "http://dynamic-api.runasp.net/api/DynamicObject",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"dynamic-api",
+						"runasp",
+						"net"
 					],
-					"port": "5000",
 					"path": [
 						"api",
 						"DynamicObject"
