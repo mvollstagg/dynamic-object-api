@@ -13,95 +13,84 @@ namespace IODynamicObject.Application.Mappers
 {
     public static class IOMappingHelper
     {
-        public static TModel ApplyMapping<T, TModel>(T entity)
-            where T : IOEntityBase, new()
-            where TModel : new()
+        public static TModel ApplyMapping<T, TModel>(T entity, params string[] ignoreProperties)
+        where T : IOEntityBase, new()
+        where TModel : new()
         {
             var model = new TModel();
 
-            // Map static properties where names and types match
-            MapStaticProperties(entity, model);
-
-            // Map collections (like List<OrderItem>)
-            MapCollections(entity, model);
-
-            // Map nested objects (like Product in OrderItem)
-            MapNestedObjects(entity, model);
-
-            // Map dynamic objects (IOObject)
+            MapStaticProperties(entity, model, ignoreProperties);
+            MapCollections(entity, model, ignoreProperties);
+            MapNestedObjects(entity, model, ignoreProperties);
             MapDynamicObjects(entity, model);
 
             return model;
         }
 
-        private static void MapStaticProperties<T, TModel>(T entity, TModel model)
+        private static void MapStaticProperties<T, TModel>(T entity, TModel model, string[] ignoreProperties)
         {
             var entityType = typeof(T);
             var modelType = typeof(TModel);
 
-            // Get all properties from both entity and model
             var entityProperties = entityType.GetProperties();
             var modelProperties = modelType.GetProperties();
 
             foreach (var modelProp in modelProperties)
             {
-                // Find matching entity property by name and type
+                if (ignoreProperties.Contains(modelProp.Name))
+                    continue;
+
                 var entityProp = entityProperties.FirstOrDefault(
                     p => p.Name == modelProp.Name && p.PropertyType == modelProp.PropertyType);
 
                 if (entityProp != null)
                 {
-                    // Copy value from entity to model
                     var value = entityProp.GetValue(entity);
                     modelProp.SetValue(model, value);
                 }
             }
         }
 
-        private static void MapCollections<T, TModel>(T entity, TModel model)
+        private static void MapCollections<T, TModel>(T entity, TModel model, string[] ignoreProperties)
         {
             var entityType = typeof(T);
             var modelType = typeof(TModel);
 
-            // Get all properties from both entity and model
             var entityProperties = entityType.GetProperties();
             var modelProperties = modelType.GetProperties();
 
             foreach (var modelProp in modelProperties)
             {
-                // Check if the model property is a generic list
+                if (ignoreProperties.Contains(modelProp.Name))
+                    continue;
+
                 if (modelProp.PropertyType.IsGenericType && modelProp.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    // Find matching entity property by name
                     var entityProp = entityProperties.FirstOrDefault(p => p.Name == modelProp.Name);
 
                     if (entityProp != null && entityProp.PropertyType.IsGenericType && entityProp.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
                     {
-                        // Get the generic type arguments of the list (e.g., OrderItem -> OrderItemModel)
                         var entityItemType = entityProp.PropertyType.GetGenericArguments()[0];
                         var modelItemType = modelProp.PropertyType.GetGenericArguments()[0];
 
-                        // Get the value of the list from the entity
-                        var entityList = entityProp.GetValue(entity) as IEnumerable<object>;
+                        var mappingAttribute = modelProp.GetCustomAttribute<IOMappingPropertyTypeAttribute>();
+                        if (mappingAttribute != null && mappingAttribute.EntityType.IsGenericType &&
+                            mappingAttribute.EntityType.GetGenericTypeDefinition() == typeof(List<>))
+                        {
+                            entityItemType = mappingAttribute.EntityType.GetGenericArguments()[0];
+                        }
+
+                        var entityList = entityProp.GetValue(entity) as IEnumerable;
                         if (entityList != null)
                         {
-                            // Create a new list for the model
                             var modelList = Activator.CreateInstance(typeof(List<>).MakeGenericType(modelItemType)) as IList;
 
-                            // Loop through each item in the entity list and apply mapping recursively
                             foreach (var entityItem in entityList)
                             {
-                                // Use ApplyMapping to map each entity item to model item
-                                var modelItem = Activator.CreateInstance(modelItemType);
-                                var mappedItem = typeof(IOMappingHelper)
-                                    .GetMethod("ApplyMapping")
-                                    .MakeGenericMethod(entityItemType, modelItemType)
-                                    .Invoke(null, new object[] { entityItem });
-
+                                var mappedItem = ApplyMapping(entityItem, entityItemType, modelItemType, "Customer");
                                 modelList.Add(mappedItem);
                             }
 
-                            // Set the model list in the model
                             modelProp.SetValue(model, modelList);
                         }
                     }
@@ -109,49 +98,48 @@ namespace IODynamicObject.Application.Mappers
             }
         }
 
-        private static void MapNestedObjects<T, TModel>(T entity, TModel model)
+        private static void MapNestedObjects<T, TModel>(T entity, TModel model, string[] ignoreProperties)
         {
             var entityType = typeof(T);
             var modelType = typeof(TModel);
 
-            // Get all properties from both entity and model
             var entityProperties = entityType.GetProperties();
             var modelProperties = modelType.GetProperties();
 
             foreach (var modelProp in modelProperties)
             {
-                // Check if the property is a complex nested object (e.g., Product in OrderItemModel)
-                if (!modelProp.PropertyType.IsPrimitive && !modelProp.PropertyType.IsValueType && modelProp.PropertyType != typeof(string))
+                if (ignoreProperties.Contains(modelProp.Name))
+                    continue;
+
+                if (!modelProp.PropertyType.IsPrimitive && !modelProp.PropertyType.IsValueType &&
+                    modelProp.PropertyType != typeof(string) && !modelProp.PropertyType.IsGenericType)
                 {
-                    // Find matching entity property by name
                     var entityProp = entityProperties.FirstOrDefault(p => p.Name == modelProp.Name);
-                    var entityPropertyType = modelProp.PropertyType;
                     var mappingAttribute = modelProp.GetCustomAttribute<IOMappingPropertyTypeAttribute>();
 
-                    if (entityProp != null && mappingAttribute != null)
+                    if (entityProp != null)
                     {
-                        entityPropertyType = mappingAttribute != null ? mappingAttribute.EntityType : entityProp.PropertyType;
-                    }
+                        Type entityPropertyType = mappingAttribute != null ? mappingAttribute.EntityType : entityProp.PropertyType;
 
-                    if (entityProp != null && (entityProp.PropertyType == modelProp.PropertyType || entityProp.PropertyType == entityPropertyType))
-                    {
-                        // Get the value of the nested object from the entity
-                        var entityNestedObject = entityProp.GetValue(entity);
-                        if (entityNestedObject != null)
+                        if (entityProp.PropertyType == entityPropertyType)
                         {
-                            // Recursively apply mapping to the nested object
-                            var nestedModel = Activator.CreateInstance(modelProp.PropertyType);
-                            var mappedNestedObject = typeof(IOMappingHelper)
-                                .GetMethod("ApplyMapping")
-                                .MakeGenericMethod(entityProp.PropertyType, modelProp.PropertyType)
-                                .Invoke(null, new object[] { entityNestedObject });
-
-                            // Set the mapped nested object in the model
-                            modelProp.SetValue(model, mappedNestedObject);
+                            var entityNestedObject = entityProp.GetValue(entity);
+                            if (entityNestedObject != null)
+                            {
+                                var mappedNestedObject = ApplyMapping(entityNestedObject, entityPropertyType, modelProp.PropertyType, "Customer");
+                                modelProp.SetValue(model, mappedNestedObject);
+                            }
                         }
                     }
                 }
             }
+        }
+
+        private static object ApplyMapping(object entity, Type entityType, Type modelType, params string[] ignoreProperties)
+        {
+            var mappingMethod = typeof(IOMappingHelper).GetMethod("ApplyMapping");
+            var genericMethod = mappingMethod.MakeGenericMethod(entityType, modelType);
+            return genericMethod.Invoke(null, new object[] { entity, ignoreProperties });
         }
 
         private static void MapDynamicObjects<T, TModel>(T entity, TModel model)

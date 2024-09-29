@@ -78,11 +78,17 @@ namespace IODynamicObject.Infrastructure.Services
                 // Find order by ID and include related customer, items, and dynamic objects
                 var order = await _context.Orders
                     .Include(o => o.Customer)
+                        .ThenInclude(c => c.DynamicObjects)
+                            .ThenInclude(o => o.Fields)
+                                .ThenInclude(f => f.Values)
                     .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                        .ThenInclude(oi => oi.Product)
+                            .ThenInclude(p => p.DynamicObjects)
+                                .ThenInclude(o => o.Fields)
+                                    .ThenInclude(f => f.Values)
                     .Include(o => o.DynamicObjects)
-                    .ThenInclude(o => o.Fields)
-                    .ThenInclude(f => f.Values)
+                        .ThenInclude(o => o.Fields)
+                            .ThenInclude(f => f.Values)
                     .FirstOrDefaultAsync(o => o.Id == id);
 
                 if (order == null || order.Deleted)

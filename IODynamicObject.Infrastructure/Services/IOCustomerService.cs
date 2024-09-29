@@ -74,6 +74,15 @@ namespace IODynamicObject.Infrastructure.Services
             {
                 // Find customer by ID and include dynamic objects
                 var customer = await _context.Customers
+                    .Include(o => o.Orders)
+                        .ThenInclude(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
+                            .ThenInclude(p => p.DynamicObjects)
+                                .ThenInclude(o => o.Fields)
+                                    .ThenInclude(f => f.Values)
+                    .Include(o => o.DynamicObjects)
+                        .ThenInclude(o => o.Fields)
+                            .ThenInclude(f => f.Values)
                     .Include(c => c.DynamicObjects)
                     .ThenInclude(o => o.Fields)
                     .ThenInclude(f => f.Values)

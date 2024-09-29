@@ -100,7 +100,7 @@ namespace IODynamicObject.API.Controllers
             {
                 case "customer":
                     var customerResult = await _customerService.GetByIdAsync(id);
-                    var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data);
+                    var customerDto = IOMappingHelper.ApplyMapping<IOCustomer, CustomerModel>(customerResult.Data, "Customer");
                     return Ok(customerDto);
 
                 case "order":
